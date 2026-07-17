@@ -8,7 +8,7 @@ agent profiles.
 
 ```powershell
 # 1. Clone into .codewhale
-git clone <repo-url> $env:USERPROFILE\.codewhale
+git clone https://github.com/ColonelReaper/caipira.git $env:USERPROFILE\.codewhale
 
 # 2. Install Node dependencies
 cd $env:USERPROFILE\.codewhale\caipira

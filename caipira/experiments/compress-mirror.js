@@ -11,23 +11,37 @@ var https = require('https');
 
 var K = 'DEEPSEEK_API_' + 'KEY';
 var apiKey = process.env[K];
-var model = process.env['DEEPSEEK_MODEL'] || 'deepseek-chat';
+var model = process.env['DEEPSEEK_MODEL'] || 'deepseek-v4-pro';
 var apiHost = 'api.deepseek.com';
 var apiPath = '/v1/chat/completions';
 
 if (!apiKey) { console.error('Set DEEPSEEK_API_KEY'); process.exit(1); }
 
 var testPrompts = [
+  // Core technical (from v1)
   "Can you explain how the Python garbage collector works and what reference counting means for memory management?",
   "I need to set up a PostgreSQL database with proper indexing for a users table. What is the best approach for handling email lookups and name searches?",
   "Write a JavaScript function that takes an array of numbers and returns the median value without using any built-in sort method.",
   "What are the differences between REST and GraphQL APIs, and when should I use each one for a new project?",
   "How do I configure Nginx as a reverse proxy for a Node.js application that is running on port 3000?",
-  "Explain the concept of dependency injection and why it is useful in large applications.",
-  "I have a git repository with some commits I want to remove from the history. What is the safest way to do this?",
-  "Compare PostgreSQL and MongoDB for a social media application that needs to handle millions of users.",
-  "Write a SQL query to find the top 5 customers by total order value in the last 30 days.",
-  "What is the difference between a process and a thread, and how does the operating system schedule them?"
+  "What is the difference between a process and a thread, and how does the operating system schedule them?",
+  // Edge: very short
+  "ok",
+  "Why?",
+  // Edge: code-heavy
+  "Write a complete Express.js server with error handling middleware, request logging via morgan, and rate limiting using express-rate-limit. Include TypeScript types.",
+  // Edge: data/numbers
+  "Dataset has 1,234,567 rows. Column A: mean 42.5, stddev 3.2. Column B correlates at r=0.87. Outliers detected in top 1%. What statistical test should I use to determine if A significantly differs from B?",
+  // Edge: non-English
+  "Por favor, explica como funciona o garbage collector do Python e o que significa contagem de referencias para gerenciamento de memoria.",
+  // Edge: meta/self-referential
+  "What is the most token-efficient way to compress natural language text while preserving semantic meaning and code blocks?",
+  // Edge: creative/writing
+  "Write a haiku about garbage collection in computer programming.",
+  // Edge: multiple URLs/paths
+  "Compare these two packages for building CLI tools: https://www.npmjs.com/package/commander and https://www.npmjs.com/package/yargs. Which has better TypeScript support?",
+  // Edge: very long, multi-part
+  "I am building a real-time chat application with WebSocket support. The backend uses Node.js with TypeScript, PostgreSQL for persistence, Redis for pub/sub and session storage, and Docker for deployment. I need to handle: 1) Authentication via JWT with refresh tokens, 2) Message history with pagination and full-text search, 3) Online presence indicators, 4) Typing indicators with debouncing, 5) File uploads for images with thumbnail generation. Walk me through the architecture and key design decisions for each component."
 ];
 
 var systemPrompts = {
@@ -37,14 +51,13 @@ var systemPrompts = {
 };
 
 var conditions = [
-  { id: 'A', name: 'Control (raw, no instructions)', sp: 'none', compress: false },
-  { id: 'B', name: 'Instruction (raw + rules)', sp: 'instruction', compress: false },
-  { id: 'C', name: 'Compressed input only', sp: 'none', compress: true },
-  { id: 'D', name: 'Compressed input + instruction', sp: 'instruction', compress: true },
-  { id: 'E', name: 'Compressed input + few-shot', sp: 'fewshot', compress: true }
+  { id: 'A', name: 'Control (raw, no instructions)', sp: 'none', compress: false, re: null },
+  { id: 'E', name: 'Few-shot + reasoning=low', sp: 'fewshot', compress: true, re: 'low' },
+  { id: 'F', name: 'Few-shot + reasoning=medium', sp: 'fewshot', compress: true, re: 'medium' },
+  { id: 'G', name: 'Few-shot + reasoning=high', sp: 'fewshot', compress: true, re: 'high' }
 ];
 
-function callAPI(sysPrompt, userMsg) {
+function callAPI(sysPrompt, userMsg, reasoningEffort) {
   return new Promise(function(resolve, reject) {
     var messages = [];
     if (sysPrompt) messages.push({ role: 'system', content: sysPrompt });
@@ -56,7 +69,10 @@ function callAPI(sysPrompt, userMsg) {
       messages: messages,
       temperature: 0.3
     };
-    bodyObj['max_' + T] = 400;
+    bodyObj['max_' + T] = 600;
+    if (reasoningEffort) {
+      bodyObj['reasoning_effort'] = reasoningEffort;
+    }
     var body = JSON.stringify(bodyObj);
 
     var A = 'Authori' + 'zation';
@@ -112,7 +128,7 @@ async function main() {
       console.log('  [' + (pi+1) + '/' + testPrompts.length + '] ' + prompt.slice(0, 50) + '...');
 
       try {
-        var result = await callAPI(sp, userMsg);
+        var result = await callAPI(sp, userMsg, cond.re);
         var firstLine = result.content.split('\n')[0].slice(0, 80);
         var PT = 'prompt_' + 'tokens';
         var CT = 'completion_' + 'tokens';

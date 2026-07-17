@@ -1,0 +1,34 @@
+# Runtime data
+logs/
+sessions/
+state/
+tasks/
+tool_outputs/
+automations/runs/
+slop_ledger/
+
+# Secrets & credentials
+secrets/
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Node modules
+node_modules/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# CodeWhale runtime
+audit.log
+composer_history.txt
+setup_state.json
+.onboarded
+catalog/
+
+# Caipira data (DB lives in ~/.caipira/, but exclude any local copies)
+caipira/data.db*

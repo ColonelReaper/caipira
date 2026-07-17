@@ -1,0 +1,17 @@
+default_text_model = "deepseek-v4-pro"
+provider = "deepseek"
+auth_mode = "api_key"
+harness_profiles = []
+
+[providers.deepseek]
+auth_mode = "api_key"
+
+[projects.'\\?\C:\Users\luism']
+trust_level = "trusted"
+
+[[hotbar]]
+slot = 1
+action = "filetree.toggle"
+
+[tui]
+status_items = ["mode", "model", "cost", "balance", "status", "agents", "reasoning_replay", "cache", "context_percent", "git_branch", "tokens"]

@@ -1,0 +1,10 @@
+{
+  "name": "caipira",
+  "version": "1.0.0",
+  "description": "Native CodeWhale memory + compression. No daemon. No HTTP. Direct SQLite.",
+  "type": "commonjs",
+  "main": "store.js",
+  "dependencies": {
+    "better-sqlite3": "^11.5.0"
+  }
+}

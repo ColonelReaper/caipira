@@ -1,0 +1,124 @@
+# CodeWhale Hook Configuration — Caipira Native (Direct SQLite, No Daemon)
+#
+# Layer 1 — COMPRESSION (session_start + message_submit):
+#   system-inject         → inject caipira rules into session context
+#   caipira-compress      → compress user messages (pure regex, zero API)
+#
+# Layer 2 — MEMORY (session_start + session_end + turn_end):
+#   session-start         → create session in SQLite
+#   session-end           → close session + generate summary
+#   turn-end              → capture turn summary + tool errors
+#
+# Layer 3 — SUPPORT (tool_call_before + tool_call_after + on_error):
+#   capture-learning, learnings-command-check, redirect-bash,
+#   block-security, learnings-error-capture, autofix
+#
+# ────────────────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION LIFECYCLE
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── session_start: create caipira session ──
+[[hooks]]
+event = "session_start"
+command = "node ./caipira/hooks/session-start.js"
+timeout_secs = 2
+continue_on_error = true
+name = "caipira-session-start"
+
+# ── session_start: inject caipira compression rules ──
+[[hooks]]
+event = "session_start"
+command = "node ./caipira/hooks/system-inject.js"
+timeout_secs = 2
+continue_on_error = true
+name = "caipira-system-inject"
+
+# ── session_end: close caipira session ──
+[[hooks]]
+event = "session_end"
+command = "node ./caipira/hooks/session-end.js"
+timeout_secs = 3
+continue_on_error = true
+name = "caipira-session-end"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MESSAGE PIPELINE
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── message_submit: compress user message (caipira ULTRA rules) ──
+[[hooks]]
+event = "message_submit"
+command = "node ./hooks/caipira-compress.js"
+timeout_secs = 2
+continue_on_error = true
+name = "caipira-compress"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TURN END
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── turn_end: capture turn to caipira memory ──
+[[hooks]]
+event = "turn_end"
+command = "node ./caipira/hooks/turn-end.js"
+timeout_secs = 2
+continue_on_error = true
+name = "caipira-turn-end"
+
+# ── turn_end: capture learnings (pattern recording) ──
+[[hooks]]
+event = "turn_end"
+command = "node ./hooks/capture-learning.js"
+timeout_secs = 3
+continue_on_error = true
+name = "capture-learning"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TOOL CALL — BEFORE
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── tool_call_before: pre-check commands against known failures ──
+[[hooks]]
+event = "tool_call_before"
+command = "node ./hooks/learnings-command-check.js"
+timeout_secs = 3
+continue_on_error = true
+name = "learnings-command-check"
+
+# ── tool_call_before: suggest native tools instead of bash ──
+[[hooks]]
+event = "tool_call_before"
+command = "node ./hooks/redirect-bash.js"
+timeout_secs = 2
+continue_on_error = true
+name = "redirect-bash"
+
+# ── tool_call_before: block writes to sensitive files ──
+[[hooks]]
+event = "tool_call_before"
+command = "node ./hooks/block-security.js"
+timeout_secs = 2
+continue_on_error = true
+name = "block-security"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TOOL CALL — AFTER
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── tool_call_after: capture failed tool calls to learnings DB ──
+[[hooks]]
+event = "tool_call_after"
+command = "node ./hooks/learnings-error-capture.js"
+timeout_secs = 3
+continue_on_error = true
+name = "learnings-error-capture"
+
+# ── on_error: auto-repair tool errors before model sees them ──
+[[hooks]]
+event = "on_error"
+command = "node ./hooks/autofix.js"
+timeout_secs = 3
+continue_on_error = true
+name = "autofix"

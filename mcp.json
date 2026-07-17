@@ -1,0 +1,42 @@
+{
+  "timeouts": {
+    "connect_timeout": 10,
+    "execute_timeout": 60,
+    "read_timeout": 120
+  },
+  "servers": {
+    "caipira": {
+      "command": "node",
+      "args": [
+        "./caipira/mcp.js"
+      ],
+      "env": {},
+      "url": null,
+      "connect_timeout": null,
+      "execute_timeout": null,
+      "read_timeout": null,
+      "disabled": false,
+      "enabled": true,
+      "required": false,
+      "enabled_tools": [],
+      "disabled_tools": []
+    },
+    "madar": {
+      "command": "madar",
+      "args": [
+        "serve",
+        "--stdio"
+      ],
+      "env": {},
+      "url": null,
+      "connect_timeout": null,
+      "execute_timeout": null,
+      "read_timeout": null,
+      "disabled": false,
+      "enabled": true,
+      "required": false,
+      "enabled_tools": [],
+      "disabled_tools": []
+    }
+  }
+}
